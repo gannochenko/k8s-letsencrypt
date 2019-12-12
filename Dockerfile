@@ -5,4 +5,5 @@ RUN mkdir -p /etc/letsencrypt
 
 CMD ["/entrypoint.sh"]
 
-COPY ./templates/ /
+COPY ./templates /templates/
+COPY entrypoint.sh /

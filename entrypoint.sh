@@ -6,8 +6,8 @@ if [[ -z $EMAIL || -z $DOMAINS || -z $SECRET ]]; then
 	exit 1
 fi
 
-NAMESPACE=$(cat ${SERVICEACCOUNT_MP}/namespace)
 SERVICEACCOUNT_MP=/var/run/secrets/kubernetes.io/serviceaccount
+NAMESPACE=$(cat ${SERVICEACCOUNT_MP}/namespace)
 K8S_API=https://kubernetes.default/api/v1/namespaces/${NAMESPACE}
 TOKEN=$(cat ${SERVICEACCOUNT_MP}/token)
 CERTPATH=/etc/letsencrypt/live/$(echo ${DOMAINS} | cut -f1 -d',')
@@ -30,14 +30,17 @@ else
     echo "Obtaining the certificate"
 
     # starting a dummy service to pass ACME-challenges, run certbot against it, then shut down the server
-    python3 -m http.server 80 &
-    sleep 5
-    PID=$!
-    certbot certonly --webroot -w $HOME -n --agree-tos --email ${EMAIL} --no-self-upgrade -d ${DOMAINS}
-    kill $PID
+#    python3 -m http.server 80 &
+#    sleep 5
+#    PID=$!
+#    certbot certonly --webroot -w $HOME -n --agree-tos --email ${EMAIL} --no-self-upgrade -d ${DOMAINS}
+#    kill $PID
+#
+#    TLSCERT=$(cat ${CERTPATH}/fullchain.pem | base64 | tr -d '\n')
+#    TLSKEY=$(cat ${CERTPATH}/privkey.pem | base64 | tr -d '\n')
 
-    TLSCERT=$(cat ${CERTPATH}/fullchain.pem | base64 | tr -d '\n')
-    TLSKEY=$(cat ${CERTPATH}/privkey.pem | base64 | tr -d '\n')
+    TLSCERT=la
+    TLSKEY=lo
 
     if [[ ! ${TLSCERT} || ! ${TLSKEY} ]]; then
         echo "Was not able to get a certificate, check the certbot output"
@@ -51,6 +54,8 @@ else
         sed "s/TLSCERT/${TLSCERT}/" | \
         sed "s/TLSKEY/${TLSKEY}/" \
         > /secret-patch.json
+
+    cat /secret-patch.json
 
     RESPONSE=`curl -v --cacert ${SERVICEACCOUNT_MP}/ca.crt -H "Authorization: Bearer ${TOKEN}" -k -v -XPATCH  -H "Accept: application/json, */*" -H "Content-Type: application/strategic-merge-patch+json" -d @/secret-patch.json ${K8S_API}/secrets/${SECRET}`
     echo "RESPONSE:";

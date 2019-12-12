@@ -32,8 +32,6 @@
     -->
     <br />
     <br />
-    <a href="https://k8s-letsencrypt.netlify.com/">View Demo</a>
-    ·
     <a href="https://github.com/awesome1888/k8s-letsencrypt/issues">Report Bug</a>
     ·
     <a href="https://github.com/awesome1888/k8s-letsencrypt/issues">Request Feature</a>
@@ -133,7 +131,7 @@ Project Link: [https://github.com/awesome1888/k8s-letsencrypt](https://github.co
 
 Special thanks to:
 
-* [Unsplash](https://unsplash.com)
+* [kube-nginx-letsencrypt](https://hub.docker.com/r/sjenning/kube-nginx-letsencrypt/)
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
