@@ -11,7 +11,7 @@ NAMESPACE=$(cat ${SERVICEACCOUNT_MP}/namespace)
 K8S_API=https://kubernetes.default/api/v1/namespaces/${NAMESPACE}
 TOKEN=$(cat ${SERVICEACCOUNT_MP}/token)
 CERTPATH=/etc/letsencrypt/live/$(echo ${DOMAINS} | cut -f1 -d',')
-DRY_RUN=
+STAGING=
 
 SECRET_PATCH_TEMPLATE=/templates/secret-patch.json
 SECRET_POST_TEMPLATE=/templates/secret-post.json
@@ -27,16 +27,16 @@ if [[ $RENEWAL ]]; then
 
     # todo
 else
-    echo "Seeding the certificate"
+    echo "Getting the certificate"
 
     # starting a dummy service to pass ACME-challenges, run certbot against it, then shut down the server
     python3 -m http.server 80 &
     sleep 5
     PID=$!
-    certbot certonly --webroot -w $HOME -n --agree-tos --email ${EMAIL} --no-self-upgrade -d ${DOMAINS}
+    certbot certonly --webroot -w $HOME -n --agree-tos --email ${EMAIL} --no-self-upgrade -d ${DOMAINS} # --staging
     kill $PID
 
-    if [[ ! -f ${CERTPATH} ]]; then
+    if [[ ! -d ${CERTPATH} ]]; then
         echo "Was not able to get a certificate, check the certbot output"
         exit 1
     fi
@@ -72,11 +72,15 @@ else
     case ${RESPONSE_CODE} in
     404)
         echo "Secret doesn't exist, creating"
-        RESP=`curl -v --cacert ${SERVICEACCOUNT_MP}/ca.crt -H "Authorization: Bearer ${TOKEN}" -k -v -XPOST  -H "Accept: application/json, */*" -H "Content-Type: application/json" -d @/secret-patch.json ${K8S_API}/secrets`
-        echo $RESP
+
+        cat ${SECRET_POST_TEMPLATE} | \
+            sed "s/NAMESPACE/${NAMESPACE}/" | \
+            sed "s/NAME/${SECRET}/" | \
+            sed "s/TLSCERT/${TLSCERT}/" | \
+            sed "s/TLSKEY/${TLSKEY}/" \
+            > /secret-post.json
+
+        curl -v --cacert ${SERVICEACCOUNT_MP}/ca.crt -H "Authorization: Bearer ${TOKEN}" -k -v -XPOST  -H "Accept: application/json, */*" -H "Content-Type: application/json" -d @/secret-post.json ${K8S_API}/secrets
         ;;
     esac
-
-    # restart the ingress
-    ## ?? should we?
 fi
