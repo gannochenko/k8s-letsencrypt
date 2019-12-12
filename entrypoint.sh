@@ -33,7 +33,7 @@ else
     python3 -m http.server 80 &
     sleep 5
     PID=$!
-    certbot certonly --webroot -w $HOME -n --agree-tos --email ${EMAIL} --no-self-upgrade -d ${DOMAINS}
+    certbot certonly --webroot -w $HOME -n --agree-tos --email ${EMAIL} --no-self-upgrade -d ${DOMAINS} --dry-run
     kill $PID
 
     if [[ ! -f /etc/resolv.conf ]]; then
