@@ -27,16 +27,16 @@ if [[ $RENEWAL ]]; then
 
     # todo
 else
-    echo "Obtaining the certificate"
+    echo "Seeding the certificate"
 
     # starting a dummy service to pass ACME-challenges, run certbot against it, then shut down the server
     python3 -m http.server 80 &
     sleep 5
     PID=$!
-    certbot certonly --webroot -w $HOME -n --agree-tos --email ${EMAIL} --no-self-upgrade -d ${DOMAINS} --dry-run
+    certbot certonly --webroot -w $HOME -n --agree-tos --email ${EMAIL} --no-self-upgrade -d ${DOMAINS}
     kill $PID
 
-    if [[ ! -f /etc/resolv.conf ]]; then
+    if [[ ! -f ${CERTPATH} ]]; then
         echo "Was not able to get a certificate, check the certbot output"
         exit 1
     fi
