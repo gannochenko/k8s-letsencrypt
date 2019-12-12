@@ -30,17 +30,22 @@ else
     echo "Obtaining the certificate"
 
     # starting a dummy service to pass ACME-challenges, run certbot against it, then shut down the server
-#    python3 -m http.server 80 &
-#    sleep 5
-#    PID=$!
-#    certbot certonly --webroot -w $HOME -n --agree-tos --email ${EMAIL} --no-self-upgrade -d ${DOMAINS}
-#    kill $PID
-#
-#    TLSCERT=$(cat ${CERTPATH}/fullchain.pem | base64 | tr -d '\n')
-#    TLSKEY=$(cat ${CERTPATH}/privkey.pem | base64 | tr -d '\n')
+    python3 -m http.server 80 &
+    sleep 5
+    PID=$!
+    certbot certonly --webroot -w $HOME -n --agree-tos --email ${EMAIL} --no-self-upgrade -d ${DOMAINS}
+    kill $PID
 
-    TLSCERT=la
-    TLSKEY=lo
+    if [[ ! -f /etc/resolv.conf ]]; then
+        echo "Was not able to get a certificate, check the certbot output"
+        exit 1
+    fi
+
+    TLSCERT=$(cat ${CERTPATH}/fullchain.pem | base64 | tr -d '\n')
+    TLSKEY=$(cat ${CERTPATH}/privkey.pem | base64 | tr -d '\n')
+
+#    TLSCERT=Zm9v
+#    TLSKEY=YmFy
 
     if [[ ! ${TLSCERT} || ! ${TLSKEY} ]]; then
         echo "Was not able to get a certificate, check the certbot output"
@@ -55,32 +60,23 @@ else
         sed "s/TLSKEY/${TLSKEY}/" \
         > /secret-patch.json
 
-    cat /secret-patch.json
-
     RESPONSE=`curl -v --cacert ${SERVICEACCOUNT_MP}/ca.crt -H "Authorization: Bearer ${TOKEN}" -k -v -XPATCH  -H "Accept: application/json, */*" -H "Content-Type: application/strategic-merge-patch+json" -d @/secret-patch.json ${K8S_API}/secrets/${SECRET}`
-    echo "RESPONSE:";
-    echo ${RESPONSE};
+#    echo "RESPONSE:";
+#    echo ${RESPONSE};
     RESPONSE_CODE=`echo ${RESPONSE} | jq -r '.code'`
 
-    echo "RESPONSE_CODE:"
-    echo ${RESPONSE_CODE}
-fi
+#    echo "RESPONSE_CODE:"
+#    echo ${RESPONSE_CODE}
 
-#case $CODE in
-#200)
-#	echo "Secret Updated"
-#	exit 0
-#	;;
-#404)
-#	echo "Secret doesn't exist"
-#	echo "Create secret ${SECRET}"
-#	RESP=`curl -v --cacert /var/run/secrets/kubernetes.io/serviceaccount/ca.crt -H "Authorization: Bearer ${TOKEN}" -k -v -XPOST  -H "Accept: application/json, */*" -H "Content-Type: application/json" -d @/secret-patch.json https://kubernetes.default/api/v1/namespaces/${NAMESPACE}/secrets`
-#	echo $RESP
-#	# echo "Create secret ${SECRET}"
-#	;;
-#*)
-#	echo "Unknown Error:"
-#	echo $RESP
-#	exit 1
-#	;;
-#esac
+    # check the RESPONSE_CODE: create the secret if there is none
+    case ${RESPONSE_CODE} in
+    404)
+        echo "Secret doesn't exist, creating"
+        RESP=`curl -v --cacert ${SERVICEACCOUNT_MP}/ca.crt -H "Authorization: Bearer ${TOKEN}" -k -v -XPOST  -H "Accept: application/json, */*" -H "Content-Type: application/json" -d @/secret-patch.json ${K8S_API}/secrets`
+        echo $RESP
+        ;;
+    esac
+
+    # restart the ingress
+    ## ?? should we?
+fi
