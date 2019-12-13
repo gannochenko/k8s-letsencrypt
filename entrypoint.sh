@@ -33,9 +33,6 @@ if [[ ${SERVE} ]]; then
 else
     echo "Getting the certificate"
 
-    echo "Staging"
-    echo ${STAGING_FLAG}
-
     # starting a dummy service to pass ACME-challenges, run certbot against it, then shut down the server
     python3 -m http.server 80 &
     sleep 5
