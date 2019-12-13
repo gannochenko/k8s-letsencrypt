@@ -11,7 +11,11 @@ NAMESPACE=$(cat ${SERVICEACCOUNT_MP}/namespace)
 K8S_API=https://kubernetes.default/api/v1/namespaces/${NAMESPACE}
 TOKEN=$(cat ${SERVICEACCOUNT_MP}/token)
 CERTPATH=/etc/letsencrypt/live/$(echo ${DOMAINS} | cut -f1 -d',')
-STAGING=
+
+STAGING_FLAG=
+if [[ ${STAGING} ]]; then
+    STAGING_FLAG="--staging"
+fi
 
 SECRET_PATCH_TEMPLATE=/templates/secret-patch.json
 SECRET_POST_TEMPLATE=/templates/secret-post.json
@@ -22,18 +26,21 @@ echo "namespace = ${NAMESPACE}"
 
 cd $HOME
 
-if [[ $RENEWAL ]]; then
-    echo "Renewing the certificate"
+if [[ ${SERVE} ]]; then
+    echo "Serving the ACME-challenge server"
 
     # todo
 else
     echo "Getting the certificate"
 
+    echo "Staging"
+    echo ${STAGING_FLAG}
+
     # starting a dummy service to pass ACME-challenges, run certbot against it, then shut down the server
     python3 -m http.server 80 &
     sleep 5
     PID=$!
-    certbot certonly --webroot -w $HOME -n --agree-tos --email ${EMAIL} --no-self-upgrade -d ${DOMAINS} # --staging
+    certbot certonly --webroot -w $HOME -n --agree-tos --email ${EMAIL} --no-self-upgrade -d ${STAGING_FLAG}
     kill $PID
 
     if [[ ! -d ${CERTPATH} ]]; then
