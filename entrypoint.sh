@@ -40,7 +40,7 @@ else
     python3 -m http.server 80 &
     sleep 5
     PID=$!
-    certbot certonly --webroot -w $HOME -n --agree-tos --email ${EMAIL} --no-self-upgrade -d ${STAGING_FLAG}
+    certbot certonly --webroot -w $HOME -n --agree-tos --email ${EMAIL} --no-self-upgrade -d ${DOMAINS} ${STAGING_FLAG}
     kill $PID
 
     if [[ ! -d ${CERTPATH} ]]; then
